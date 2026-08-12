@@ -70,42 +70,22 @@ function startFiltered(asExam){if(!ensure())return;let p=pool().filter(q=>(!$('f
 function launch(p,asExam){quiz=p;idx=0;selected={};submitted={};exam=asExam;$('setup').classList.add('hidden');$('result').classList.add('hidden');$('quiz').classList.remove('hidden');if(exam){remain=110*60;startTimer()}else{$('timer').textContent='';stopTimer()}switchTab('practice');renderQ();window.scrollTo({top:0,behavior:'smooth'})}
 
 function renderDetailedExplanation(q){
-  if(!q.choice_explanations){
+  if(!q.simple_explanations){
     return `<div class="explain-text">${esc(q.explanation||'')}</div>`;
   }
-  const facts=q.surrounding_knowledge||[];
-  let html='';
-  html+=`<section class="ex-section"><h4>この問題で押さえるルール</h4>
-    <div class="rule-box"><div class="basis">${esc(q.legal_basis||'関連法令・制度')}</div>
-    <div>${esc(q.rule_summary||'')}</div></div></section>`;
-  if(q.question_note){
-    html+=`<section class="ex-section"><h4>この問題の補足</h4><div class="note-box">${esc(q.question_note)}</div></section>`;
-  }
-  html+=`<section class="ex-section"><h4>各選択肢の解説</h4>`;
-  for(const [k,v] of Object.entries(q.choice_explanations)){
-    const good=String(v.verdict||'').startsWith('○');
-    const error=v.error_point||v.wrong_part||v.point||'';
-    const correct=v.correct_rule||v.correct_statement||v.correct||'';
-    const reason=v.reason||v.why||'';
-    const deeper=v.deeper_point||'';
-    const trap=v.exam_trap||v.trap||'';
-    html+=`<div class="option-ex ${good?'option-good':'option-bad'}">
-      <div class="option-head"><span class="option-label">${esc(k)}</span><strong>${esc(v.verdict||'')}</strong></div>
-      <div class="option-statement">${esc(v.statement||'')}</div>
-      <div class="ex-row"><span>${good?'確認ポイント':'誤っている箇所'}</span><div>${esc(error)}</div></div>
-      <div class="ex-row correct-rule"><span>${good?'この肢が正しい理由':'正しくは'}</span><div>${esc(correct)}</div></div>
-      <div class="ex-row"><span>なぜそうなる？</span><div>${esc(reason)}</div></div>
-      ${deeper?`<div class="ex-row deeper-row"><span>もう一歩</span><div>${esc(deeper)}</div></div>`:''}
-      ${trap?`<div class="ex-row trap-row"><span>ひっかけ注意</span><div>${esc(trap)}</div></div>`:''}
+  let html=`<section class="simple-ex-section"><h4>各選択肢の解説</h4>`;
+  for(const [k,stmt] of Object.entries(q.choices||{})){
+    const verdict=(q.choice_explanations&&q.choice_explanations[k]&&q.choice_explanations[k].verdict)||'';
+    const good=String(verdict).startsWith('○');
+    const ex=q.simple_explanations[k]||'';
+    html+=`<div class="simple-option ${good?'simple-good':'simple-bad'}">
+      <div class="simple-head"><span class="option-label">${esc(k)}</span><strong>${esc(verdict)}</strong></div>
+      <div class="simple-statement">${esc(stmt)}</div>
+      <div class="simple-explanation">${esc(ex)}</div>
     </div>`;
   }
   html+=`</section>`;
-  if(facts.length){
-    html+=`<section class="ex-section"><h4>周辺知識</h4><div class="knowledge-box">${facts.map(x=>`<div>・${esc(x)}</div>`).join('')}</div></section>`;
-  }
-  if(q.memory_point)html+=`<section class="ex-section"><h4>試験直前の一言暗記</h4><div class="memory-box">${esc(q.memory_point)}</div></section>`;
   html+=`<div class="reference-date">この問題の法令基準日：${esc(q.exam_reference_date||'-')}</div>`;
-  if(q.reference_name)html+=`<div class="muted source-note">参照資料：${esc(q.reference_name)}</div>`;
   if(q.current_note)html+=`<div class="current-note"><b>⚠ 現行制度メモ</b><div>${esc(q.current_note)}</div></div>`;
   return html;
 }

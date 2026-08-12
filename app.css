@@ -51,3 +51,17 @@
 .trap-row{background:#fff8e8;border-radius:8px;padding-left:10px;padding-right:10px}
 .trap-row>span{color:#9a6700}
 .reference-date{margin-top:18px;padding-top:12px;border-top:1px dashed #cbd5e1;color:#64748b;font-size:13px}
+
+.choice-basis{margin:2px 0 10px;padding:10px 12px;border-radius:10px;background:#f1f5f9}
+.choice-basis>span{display:block;font-size:12px;font-weight:850;color:#475569;margin-bottom:4px}
+.choice-basis>div{font-weight:700;line-height:1.55}
+
+/* Simple explanation v4 */
+.simple-ex-section{margin:22px 0}
+.simple-ex-section h4{font-size:19px;margin:0 0 14px}
+.simple-option{margin:16px 0;padding:17px;border:1px solid #d8dee8;border-radius:16px;background:#fff}
+.simple-good{border-left:5px solid #22c55e}
+.simple-bad{border-left:5px solid #ef4444}
+.simple-head{display:flex;align-items:center;gap:10px;font-size:18px;margin-bottom:12px}
+.simple-statement{font-weight:700;line-height:1.75;padding:4px 0 14px;border-bottom:1px solid #edf0f4;white-space:pre-line}
+.simple-explanation{padding-top:14px;line-height:1.85;white-space:pre-line}
