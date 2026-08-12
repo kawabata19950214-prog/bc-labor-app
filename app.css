@@ -44,3 +44,10 @@
 .qa-actions{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;margin-top:14px}
 .qa-actions button{min-height:50px}
 @media(max-width:520px){.qa-card{padding:18px;min-height:360px}.qa-q{font-size:19px}.qa-launcher{right:12px;bottom:14px}}
+
+.knowledge-box{padding:15px;border-radius:13px;background:#f8fafc;border:1px solid #dbe3ee;line-height:1.8}
+.knowledge-box>div+div{margin-top:7px}
+.deeper-row{background:#fafafa;border-radius:8px;padding-left:10px;padding-right:10px}
+.trap-row{background:#fff8e8;border-radius:8px;padding-left:10px;padding-right:10px}
+.trap-row>span{color:#9a6700}
+.reference-date{margin-top:18px;padding-top:12px;border-top:1px dashed #cbd5e1;color:#64748b;font-size:13px}

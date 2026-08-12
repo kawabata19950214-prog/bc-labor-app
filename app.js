@@ -23,29 +23,42 @@ function renderDetailedExplanation(q){
   if(!q.choice_explanations){
     return `<div class="explain-text">${esc(q.explanation||'')}</div>`;
   }
+  const facts=q.surrounding_knowledge||[];
   let html='';
-  html+=`<section class="ex-section"><h4>根拠となるルール</h4><div class="rule-box"><div class="basis">${esc(q.legal_basis||'')}</div><div>${esc(q.rule_summary||'')}</div></div></section>`;
+  html+=`<section class="ex-section"><h4>この問題で押さえるルール</h4>
+    <div class="rule-box"><div class="basis">${esc(q.legal_basis||'関連法令・制度')}</div>
+    <div>${esc(q.rule_summary||'')}</div></div></section>`;
   if(q.question_note){
     html+=`<section class="ex-section"><h4>この問題の補足</h4><div class="note-box">${esc(q.question_note)}</div></section>`;
   }
   html+=`<section class="ex-section"><h4>各選択肢の解説</h4>`;
   for(const [k,v] of Object.entries(q.choice_explanations)){
     const good=String(v.verdict||'').startsWith('○');
+    const error=v.error_point||v.wrong_part||v.point||'';
+    const correct=v.correct_rule||v.correct_statement||v.correct||'';
+    const reason=v.reason||v.why||'';
+    const deeper=v.deeper_point||'';
+    const trap=v.exam_trap||v.trap||'';
     html+=`<div class="option-ex ${good?'option-good':'option-bad'}">
       <div class="option-head"><span class="option-label">${esc(k)}</span><strong>${esc(v.verdict||'')}</strong></div>
       <div class="option-statement">${esc(v.statement||'')}</div>
-      <div class="ex-row"><span>誤っている箇所</span><div>${esc(v.error_point||'')}</div></div>
-      <div class="ex-row correct-rule"><span>正しくは</span><div>${esc(v.correct_rule||'')}</div></div>
-      <div class="ex-row"><span>理由</span><div>${esc(v.reason||'')}</div></div>
+      <div class="ex-row"><span>${good?'確認ポイント':'誤っている箇所'}</span><div>${esc(error)}</div></div>
+      <div class="ex-row correct-rule"><span>${good?'この肢が正しい理由':'正しくは'}</span><div>${esc(correct)}</div></div>
+      <div class="ex-row"><span>なぜそうなる？</span><div>${esc(reason)}</div></div>
+      ${deeper?`<div class="ex-row deeper-row"><span>もう一歩</span><div>${esc(deeper)}</div></div>`:''}
+      ${trap?`<div class="ex-row trap-row"><span>ひっかけ注意</span><div>${esc(trap)}</div></div>`:''}
     </div>`;
   }
   html+=`</section>`;
-  if(q.memory_point)html+=`<section class="ex-section"><h4>試験で覚える</h4><div class="memory-box">${esc(q.memory_point)}</div></section>`;
+  if(facts.length){
+    html+=`<section class="ex-section"><h4>周辺知識</h4><div class="knowledge-box">${facts.map(x=>`<div>・${esc(x)}</div>`).join('')}</div></section>`;
+  }
+  if(q.memory_point)html+=`<section class="ex-section"><h4>試験直前の一言暗記</h4><div class="memory-box">${esc(q.memory_point)}</div></section>`;
+  html+=`<div class="reference-date">この問題の法令基準日：${esc(q.exam_reference_date||'-')}</div>`;
   if(q.reference_name)html+=`<div class="muted source-note">参照資料：${esc(q.reference_name)}</div>`;
   if(q.current_note)html+=`<div class="current-note"><b>⚠ 現行制度メモ</b><div>${esc(q.current_note)}</div></div>`;
   return html;
 }
-
 function renderQ(){let q=quiz[idx];if(!q)return;$('progress').textContent=`${idx+1} / ${quiz.length}`;$('meta').textContent=`${q.level} ${q.year}${q.term} 問${q.qno}`;$('progressBar').style.width=`${(idx+1)/quiz.length*100}%`;$('date').textContent=`出題基準：${q.exam_reference_date||'-'}｜${q.category}`;$('favBtn').classList.toggle('on',favs.has(q.id));$('qtext').textContent=q.text;$('choices').innerHTML=Object.entries(q.choices).map(([k,v])=>{let cls='choice';if(submitted[q.id]){if(k===q.answer)cls+=' correct';else if(selected[q.id]===k)cls+=' wrong'}return `<label class="${cls}"><input type="radio" name="ans" value="${k}" ${selected[q.id]===k?'checked':''} ${submitted[q.id]?'disabled':''} onchange="selected['${q.id}']=this.value"><b>${k}</b><span>${esc(v)}</span></label>`}).join('');let fb=$('feedback');if(submitted[q.id]){let ok=selected[q.id]===q.answer;fb.className='feedback '+(ok?'ok':'ng');fb.innerHTML=`<div class="answer-result"><b>${ok?'✅ 正解':'❌ 不正解'}　正解：${q.answer}</b></div><div class="explain">${renderDetailedExplanation(q)}<div class="muted" style="margin-top:14px">${esc(q.explanation_kind||'')}</div></div>`;fb.classList.remove('hidden');$('submit').disabled=true;$('submit').textContent='回答済み'}else{fb.className='feedback hidden';fb.innerHTML='';$('submit').disabled=false;$('submit').textContent='回答する'}}
 function submitQ(){let q=quiz[idx],a=selected[q.id];if(!a)return alert('選択肢を選んでください。');if(submitted[q.id])return;let rec={qid:q.id,level:q.level,year:q.year,term:q.term,category:q.category,selected:a,answer:q.answer,correct:a===q.answer,at:new Date().toISOString()};history.push(rec);localStorage.setItem(HKEY,JSON.stringify(history));submitted[q.id]=true;renderQ();refresh()}
 function prevQ(){if(idx>0){idx--;renderQ();scrollTo(0,0)}}
@@ -56,7 +69,10 @@ function toggleFavCurrent(){let q=quiz[idx];if(!q)return;if(favs.has(q.id))favs.
 function renderReview(kind){if(!QUESTIONS.length){$('reviewList').innerHTML='<div class="muted">問題データ未読込</div>';return}let p;if(kind==='fav')p=pool().filter(q=>favs.has(q.id));else{let last={};history.filter(a=>a.level===level).forEach(a=>last[a.qid]=a);p=pool().filter(q=>last[q.id]&&!last[q.id].correct)}$('reviewList').innerHTML=p.length?p.map(q=>`<div class="item"><div class="meta">${q.year}${q.term} 問${q.qno}｜${esc(q.category)}</div><div>${esc(q.text)}</div><button class="btn ghost" style="margin-top:8px" onclick="launchById('${q.id}')">この問題を解く</button></div>`).join(''):'<div class="muted">対象の問題はありません。</div>'}
 function renderSearch(){let el=$('searchList');if(!QUESTIONS.length){el.innerHTML='<div class="muted">問題データ未読込</div>';return}let s=($('searchBox').value||'').trim().toLowerCase(),p=pool().filter(q=>!s||(q.text+' '+Object.values(q.choices).join(' ')+' '+q.category).toLowerCase().includes(s)).slice(0,100);el.innerHTML=p.map(q=>`<div class="item"><div class="meta">${q.year}${q.term} 問${q.qno}｜${esc(q.category)}</div><div>${esc(q.text)}</div><button class="btn ghost" style="margin-top:8px" onclick="launchById('${q.id}')">解く</button></div>`).join('')||'<div class="muted">該当なし</div>'}
 function launchById(id){let q=QUESTIONS.find(x=>x.id===id);if(q)launch([q],false)}
-function importQuestions(f){if(!f)return;let r=new FileReader;r.onload=()=>{try{let d=JSON.parse(r.result),p=Array.isArray(d)?d:d.questions;if(!Array.isArray(p)||p.length<1)throw 0;QUESTIONS=p;localStorage.setItem(QKEY,JSON.stringify(p));refresh();alert(`${p.length}問を端末に保存しました。`)}catch(e){alert('問題データを読み込めませんでした。')}};r.readAsText(f)}
+function importQuestions(f){if(!f)return;let r=new FileReader;r.onload=()=>{try{let d=JSON.parse(r.result),p=Array.isArray(d)?d:d.questions;if(!Array.isArray(p)||p.length<1)throw 0;QUESTIONS=p;localStorage.setItem(QKEY,JSON.stringify(p));refresh();
+let total=0,complete=0;
+p.forEach(q=>Object.values(q.choice_explanations||{}).forEach(v=>{total++;if((v.correct_rule||v.correct_statement||v.correct)&&(v.reason||v.why)&&(v.error_point||v.wrong_part||v.point))complete++;}));
+alert(`${p.length}問を端末に保存しました。\n選択肢解説：${complete}/${total}件 読込確認済み`);}catch(e){alert('問題データを読み込めませんでした。')}};r.readAsText(f)}
 async function exportHistory(){let data={version:3,history,favs:[...favs]};let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),file=new File([blob],'BC労務_学習履歴.json',{type:'application/json'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'BC労務 学習履歴'});return}catch(e){}}let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;a.click()}
 function importHistory(f){if(!f)return;let r=new FileReader;r.onload=()=>{try{let d=JSON.parse(r.result);history=d.history||[];favs=new Set(d.favs||[]);localStorage.setItem(HKEY,JSON.stringify(history));localStorage.setItem(FKEY,JSON.stringify([...favs]));refresh();alert('学習履歴を復元しました。')}catch(e){alert('復元できませんでした。')}};r.readAsText(f)}
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));refresh();
