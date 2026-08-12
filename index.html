@@ -22,4 +22,28 @@
 </section>
 </main>
 <nav class="bottom"><button class="nav active" data-tab="home">ホーム</button><button class="nav" data-tab="practice">演習</button><button class="nav" data-tab="review">復習</button><button class="nav" data-tab="search">検索</button><button class="nav" data-tab="data">データ</button></nav>
-<script src="app.js"></script></body></html>
+<script src="app.js"></script>
+<div id="qaLauncher" class="qa-launcher" title="頻出一問一答">一問一答</div>
+<div id="qaOverlay" class="qa-overlay hidden">
+  <div class="qa-shell">
+    <div class="qa-top">
+      <button id="qaClose" class="secondary">← 過去問へ</button>
+      <strong>頻出 一問一答</strong>
+      <span id="qaProgress"></span>
+    </div>
+    <div class="qa-controls">
+      <select id="qaLevel"><option>2級</option><option>3級</option></select>
+      <select id="qaTopic"><option value="">全分野</option></select>
+      <button id="qaShuffle" class="secondary">ランダム</button>
+    </div>
+    <div id="qaCard" class="qa-card"></div>
+    <div class="qa-actions">
+      <button id="qaPrev" class="secondary">前へ</button>
+      <button id="qaReveal">答えを見る</button>
+      <button id="qaNext" class="secondary">次へ</button>
+    </div>
+  </div>
+</div>
+<script src="qa.js"></script>
+
+</body></html>

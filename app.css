@@ -25,3 +25,22 @@
 .correct-rule>div{font-weight:750}
 .source-note{margin-top:12px}
 .answer-result{font-size:20px;padding-bottom:12px;border-bottom:1px solid #e5e7eb}
+
+.qa-launcher{position:fixed;right:18px;bottom:22px;z-index:80;background:#111827;color:#fff;border-radius:999px;padding:13px 18px;font-weight:900;box-shadow:0 8px 28px #0003;cursor:pointer}
+.qa-overlay{position:fixed;inset:0;z-index:100;background:#f5f7fb;overflow:auto}
+.qa-overlay.hidden{display:none}
+.qa-shell{max-width:760px;margin:auto;padding:18px 14px 40px}
+.qa-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.qa-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.qa-controls select,.qa-controls button{min-height:42px}
+.qa-card{background:#fff;border:1px solid #dfe5ee;border-radius:20px;padding:22px;min-height:330px;box-shadow:0 8px 24px #0000000b}
+.qa-badge{font-size:13px;font-weight:800;color:#64748b;margin-bottom:20px}
+.qa-q{font-size:21px;font-weight:850;line-height:1.65}
+.qa-q span{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#111827;color:#fff;margin-right:10px}
+.qa-answer{margin-top:28px;padding:18px;border-radius:14px;background:#eff6ff;font-size:19px;line-height:1.7}
+.qa-answer b{display:block;font-size:13px;margin-bottom:5px}
+.qa-explain{margin-top:14px;padding:15px;border-radius:14px;background:#f8fafc;line-height:1.75}
+.qa-ref{margin-top:15px;color:#64748b;font-size:12px}
+.qa-actions{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;margin-top:14px}
+.qa-actions button{min-height:50px}
+@media(max-width:520px){.qa-card{padding:18px;min-height:360px}.qa-q{font-size:19px}.qa-launcher{right:12px;bottom:14px}}
