@@ -2,7 +2,7 @@
 <header class="top"><h1>BC検定 労務管理</h1><p>2級・3級｜過去問400問｜解説付き</p></header>
 <main class="wrap">
 <section id="home" class="panel active">
- <div id="noData" class="warning hidden"><b>初回設定が必要です。</b><br>「データ」から問題データJSONを1回読み込んでください。問題はこの端末内に保存されます。</div>
+ <div id="noData" class="warning hidden"><b>初回設定が必要です。</b><br>「データ」から問題データJSONを1回読み込んでください。問題はこの端末内（IndexedDB）に保存されます。</div>
  <div class="card"><h2>受験級</h2><div class="level-grid"><button class="level active" data-level="2級">2級</button><button class="level" data-level="3級">3級</button></div></div>
  <div class="card"><h3>学習状況</h3><div class="stats"><div class="stat"><span class="muted">問題数</span><b id="statQ">0</b></div><div class="stat"><span class="muted">回答数</span><b id="statA">0</b></div><div class="stat"><span class="muted">正答率</span><b id="statR">-</b></div></div></div>
  <div class="card"><h3>すぐ始める</h3><div class="actions"><button class="btn" onclick="quick(10)">ランダム10問</button><button class="btn" onclick="quick(20)">ランダム20問</button><button class="btn secondary" onclick="quickWrong()">間違い復習</button><button class="btn secondary" onclick="quickFav()">お気に入り</button></div></div>
@@ -16,7 +16,7 @@
 <section id="review" class="panel"><div class="card"><h2>復習</h2><div class="actions"><button class="btn secondary" onclick="renderReview('wrong')">間違い</button><button class="btn ghost" onclick="renderReview('fav')">お気に入り</button></div><div id="reviewList" class="list" style="margin-top:12px"></div></div></section>
 <section id="search" class="panel"><div class="card"><h2>問題検索</h2><input id="searchBox" class="search" placeholder="例：36協定、年休、健康診断" oninput="renderSearch()"><div id="searchList" class="list" style="margin-top:12px"></div></div></section>
 <section id="data" class="panel">
- <div class="card"><h2>問題データ</h2><p class="muted">GitHubには過去問を置かず、この端末にだけ読み込みます。PCとiPhoneでそれぞれ初回に1回必要です。</p><input id="qImport" class="hidden" type="file" accept=".json,application/json" onchange="importQuestions(this.files[0])"><button class="btn" onclick="qImport.click()">問題データを読み込む</button><p id="dataStatus" class="muted"></p></div>
+ <div class="card"><h2>問題データ</h2><p class="muted">GitHubには過去問を置かず、この端末のIndexedDBに保存します。詳細解説版の大容量データにも対応しています。PCとiPhoneでそれぞれ初回に1回必要です。</p><input id="qImport" class="hidden" type="file" accept=".json,application/json" onchange="importQuestions(this.files[0])"><button class="btn" onclick="qImport.click()">問題データを読み込む</button><p id="dataStatus" class="muted"></p></div>
  <div class="card"><h2>学習履歴</h2><div class="actions"><button class="btn secondary" onclick="exportHistory()">バックアップ</button><button class="btn ghost" onclick="hImport.click()">復元</button></div><input id="hImport" class="hidden" type="file" accept=".json,application/json" onchange="importHistory(this.files[0])"></div>
  <div class="card"><h3>注意</h3><p class="muted">解説は学習補助用に作成したもので、中央職業能力開発協会の公式解説ではありません。各問題の正解は提供された正解表を基にしています。法改正メモは2026年8月時点の制度確認情報です。</p></div>
 </section>

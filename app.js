@@ -1,6 +1,56 @@
 
 const QKEY='bc_labor_questions_v3',HKEY='bc_labor_history_v3',FKEY='bc_labor_favs_v3',LKEY='bc_labor_level_v3';
-let QUESTIONS=JSON.parse(localStorage.getItem(QKEY)||'[]'),history=JSON.parse(localStorage.getItem(HKEY)||'[]'),favs=new Set(JSON.parse(localStorage.getItem(FKEY)||'[]')),level=localStorage.getItem(LKEY)||'2級';
+const DBNAME='bc_labor_db_v1',DBSTORE='data',DBQKEY='questions';
+let QUESTIONS=[],history=JSON.parse(localStorage.getItem(HKEY)||'[]'),favs=new Set(JSON.parse(localStorage.getItem(FKEY)||'[]')),level=localStorage.getItem(LKEY)||'2級';
+
+function openBCDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DBNAME,1);
+    req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(DBSTORE))db.createObjectStore(DBSTORE)};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function idbGet(key){
+  const db=await openBCDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(DBSTORE,'readonly');
+    const req=tx.objectStore(DBSTORE).get(key);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function idbSet(key,value){
+  const db=await openBCDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(DBSTORE,'readwrite');
+    tx.objectStore(DBSTORE).put(value,key);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+    tx.onabort=()=>reject(tx.error);
+  });
+}
+async function loadQuestionData(){
+  try{
+    let p=await idbGet(DBQKEY);
+    if(Array.isArray(p)&&p.length){QUESTIONS=p;return;}
+    const old=localStorage.getItem(QKEY);
+    if(old){
+      try{
+        p=JSON.parse(old);
+        if(Array.isArray(p)&&p.length){
+          QUESTIONS=p;
+          await idbSet(DBQKEY,p);
+          localStorage.removeItem(QKEY);
+          return;
+        }
+      }catch(e){}
+    }
+  }catch(e){
+    console.error('IndexedDB load error',e);
+  }
+  QUESTIONS=[];
+}
 let quiz=[],idx=0,selected={},submitted={},timerId=null,remain=0,exam=false;
 const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function pool(){return QUESTIONS.filter(q=>q.level===level)}
@@ -69,10 +119,35 @@ function toggleFavCurrent(){let q=quiz[idx];if(!q)return;if(favs.has(q.id))favs.
 function renderReview(kind){if(!QUESTIONS.length){$('reviewList').innerHTML='<div class="muted">問題データ未読込</div>';return}let p;if(kind==='fav')p=pool().filter(q=>favs.has(q.id));else{let last={};history.filter(a=>a.level===level).forEach(a=>last[a.qid]=a);p=pool().filter(q=>last[q.id]&&!last[q.id].correct)}$('reviewList').innerHTML=p.length?p.map(q=>`<div class="item"><div class="meta">${q.year}${q.term} 問${q.qno}｜${esc(q.category)}</div><div>${esc(q.text)}</div><button class="btn ghost" style="margin-top:8px" onclick="launchById('${q.id}')">この問題を解く</button></div>`).join(''):'<div class="muted">対象の問題はありません。</div>'}
 function renderSearch(){let el=$('searchList');if(!QUESTIONS.length){el.innerHTML='<div class="muted">問題データ未読込</div>';return}let s=($('searchBox').value||'').trim().toLowerCase(),p=pool().filter(q=>!s||(q.text+' '+Object.values(q.choices).join(' ')+' '+q.category).toLowerCase().includes(s)).slice(0,100);el.innerHTML=p.map(q=>`<div class="item"><div class="meta">${q.year}${q.term} 問${q.qno}｜${esc(q.category)}</div><div>${esc(q.text)}</div><button class="btn ghost" style="margin-top:8px" onclick="launchById('${q.id}')">解く</button></div>`).join('')||'<div class="muted">該当なし</div>'}
 function launchById(id){let q=QUESTIONS.find(x=>x.id===id);if(q)launch([q],false)}
-function importQuestions(f){if(!f)return;let r=new FileReader;r.onload=()=>{try{let d=JSON.parse(r.result),p=Array.isArray(d)?d:d.questions;if(!Array.isArray(p)||p.length<1)throw 0;QUESTIONS=p;localStorage.setItem(QKEY,JSON.stringify(p));refresh();
-let total=0,complete=0;
-p.forEach(q=>Object.values(q.choice_explanations||{}).forEach(v=>{total++;if((v.correct_rule||v.correct_statement||v.correct)&&(v.reason||v.why)&&(v.error_point||v.wrong_part||v.point))complete++;}));
-alert(`${p.length}問を端末に保存しました。\n選択肢解説：${complete}/${total}件 読込確認済み`);}catch(e){alert('問題データを読み込めませんでした。')}};r.readAsText(f)}
+function importQuestions(f){
+  if(!f)return;
+  let r=new FileReader;
+  r.onload=async()=>{
+    try{
+      let d=JSON.parse(r.result),p=Array.isArray(d)?d:d.questions;
+      if(!Array.isArray(p)||p.length<1)throw new Error('invalid question data');
+      await idbSet(DBQKEY,p);
+      QUESTIONS=p;
+      try{localStorage.removeItem(QKEY)}catch(e){}
+      refresh();
+      let total=0,complete=0;
+      p.forEach(q=>Object.values(q.choice_explanations||{}).forEach(v=>{
+        total++;
+        if((v.correct_rule||v.correct_statement||v.correct)&&(v.reason||v.why)&&(v.error_point||v.wrong_part||v.point))complete++;
+      }));
+      alert(`${p.length}問を端末に保存しました。\n保存先：IndexedDB\n選択肢解説：${complete}/${total}件 読込確認済み`);
+    }catch(e){
+      console.error(e);
+      alert('問題データを読み込めませんでした。\nJSONファイルを選び直してください。');
+    }finally{
+      const input=document.getElementById('qImport');
+      if(input)input.value='';
+    }
+  };
+  r.onerror=()=>alert('ファイルを読み込めませんでした。');
+  r.readAsText(f);
+}
 async function exportHistory(){let data={version:3,history,favs:[...favs]};let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),file=new File([blob],'BC労務_学習履歴.json',{type:'application/json'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'BC労務 学習履歴'});return}catch(e){}}let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;a.click()}
 function importHistory(f){if(!f)return;let r=new FileReader;r.onload=()=>{try{let d=JSON.parse(r.result);history=d.history||[];favs=new Set(d.favs||[]);localStorage.setItem(HKEY,JSON.stringify(history));localStorage.setItem(FKEY,JSON.stringify([...favs]));refresh();alert('学習履歴を復元しました。')}catch(e){alert('復元できませんでした。')}};r.readAsText(f)}
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));refresh();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+(async function boot(){await loadQuestionData();refresh();})();
