@@ -18,7 +18,35 @@ function quickWrong(){if(!ensure())return;let last={};history.filter(a=>a.level=
 function quickFav(){if(!ensure())return;let p=pool().filter(q=>favs.has(q.id));if(!p.length)return alert('お気に入りがありません。');launch(p,false)}
 function startFiltered(asExam){if(!ensure())return;let p=pool().filter(q=>(!$('fYear').value||q.year===$('fYear').value)&&(!$('fTerm').value||q.term===$('fTerm').value)&&(!$('fCat').value||q.category===$('fCat').value));p=shuffle(p).slice(0,Number($('fCount').value));if(!p.length)return alert('条件に合う問題がありません。');launch(p,asExam)}
 function launch(p,asExam){quiz=p;idx=0;selected={};submitted={};exam=asExam;$('setup').classList.add('hidden');$('result').classList.add('hidden');$('quiz').classList.remove('hidden');if(exam){remain=110*60;startTimer()}else{$('timer').textContent='';stopTimer()}switchTab('practice');renderQ();window.scrollTo({top:0,behavior:'smooth'})}
-function renderQ(){let q=quiz[idx];if(!q)return;$('progress').textContent=`${idx+1} / ${quiz.length}`;$('meta').textContent=`${q.level} ${q.year}${q.term} 問${q.qno}`;$('progressBar').style.width=`${(idx+1)/quiz.length*100}%`;$('date').textContent=`出題基準：${q.exam_reference_date||'-'}｜${q.category}`;$('favBtn').classList.toggle('on',favs.has(q.id));$('qtext').textContent=q.text;$('choices').innerHTML=Object.entries(q.choices).map(([k,v])=>{let cls='choice';if(submitted[q.id]){if(k===q.answer)cls+=' correct';else if(selected[q.id]===k)cls+=' wrong'}return `<label class="${cls}"><input type="radio" name="ans" value="${k}" ${selected[q.id]===k?'checked':''} ${submitted[q.id]?'disabled':''} onchange="selected['${q.id}']=this.value"><b>${k}</b><span>${esc(v)}</span></label>`}).join('');let fb=$('feedback');if(submitted[q.id]){let ok=selected[q.id]===q.answer;fb.className='feedback '+(ok?'ok':'ng');fb.innerHTML=`<div><b>${ok?'✅ 正解':'❌ 不正解'}　正解：${q.answer}</b></div><div class="explain"><h4>解説</h4><div>${esc(q.explanation)}</div><h4>正解肢</h4><div><b>${q.answer}</b>：${esc(q.answer_text||q.choices[q.answer])}</div><h4>他の選択肢</h4><div>${esc(q.choice_summary||'')}</div><h4>試験対策ポイント</h4><div>${esc(q.exam_point||'')}</div>${q.current_note?`<div class="current-note"><b>⚠ 現行法メモ（2026年8月）</b><br>${esc(q.current_note)}</div>`:''}<div class="muted" style="margin-top:10px">${esc(q.explanation_kind||'')}</div></div>`;fb.classList.remove('hidden');$('submit').disabled=true;$('submit').textContent='回答済み'}else{fb.className='feedback hidden';fb.innerHTML='';$('submit').disabled=false;$('submit').textContent='回答する'}}
+
+function renderDetailedExplanation(q){
+  if(!q.choice_explanations){
+    return `<div class="explain-text">${esc(q.explanation||'')}</div>`;
+  }
+  let html='';
+  html+=`<section class="ex-section"><h4>根拠となるルール</h4><div class="rule-box"><div class="basis">${esc(q.legal_basis||'')}</div><div>${esc(q.rule_summary||'')}</div></div></section>`;
+  if(q.question_note){
+    html+=`<section class="ex-section"><h4>この問題の補足</h4><div class="note-box">${esc(q.question_note)}</div></section>`;
+  }
+  html+=`<section class="ex-section"><h4>各選択肢の解説</h4>`;
+  for(const [k,v] of Object.entries(q.choice_explanations)){
+    const good=String(v.verdict||'').startsWith('○');
+    html+=`<div class="option-ex ${good?'option-good':'option-bad'}">
+      <div class="option-head"><span class="option-label">${esc(k)}</span><strong>${esc(v.verdict||'')}</strong></div>
+      <div class="option-statement">${esc(v.statement||'')}</div>
+      <div class="ex-row"><span>誤っている箇所</span><div>${esc(v.error_point||'')}</div></div>
+      <div class="ex-row correct-rule"><span>正しくは</span><div>${esc(v.correct_rule||'')}</div></div>
+      <div class="ex-row"><span>理由</span><div>${esc(v.reason||'')}</div></div>
+    </div>`;
+  }
+  html+=`</section>`;
+  if(q.memory_point)html+=`<section class="ex-section"><h4>試験で覚える</h4><div class="memory-box">${esc(q.memory_point)}</div></section>`;
+  if(q.reference_name)html+=`<div class="muted source-note">参照資料：${esc(q.reference_name)}</div>`;
+  if(q.current_note)html+=`<div class="current-note"><b>⚠ 現行制度メモ</b><div>${esc(q.current_note)}</div></div>`;
+  return html;
+}
+
+function renderQ(){let q=quiz[idx];if(!q)return;$('progress').textContent=`${idx+1} / ${quiz.length}`;$('meta').textContent=`${q.level} ${q.year}${q.term} 問${q.qno}`;$('progressBar').style.width=`${(idx+1)/quiz.length*100}%`;$('date').textContent=`出題基準：${q.exam_reference_date||'-'}｜${q.category}`;$('favBtn').classList.toggle('on',favs.has(q.id));$('qtext').textContent=q.text;$('choices').innerHTML=Object.entries(q.choices).map(([k,v])=>{let cls='choice';if(submitted[q.id]){if(k===q.answer)cls+=' correct';else if(selected[q.id]===k)cls+=' wrong'}return `<label class="${cls}"><input type="radio" name="ans" value="${k}" ${selected[q.id]===k?'checked':''} ${submitted[q.id]?'disabled':''} onchange="selected['${q.id}']=this.value"><b>${k}</b><span>${esc(v)}</span></label>`}).join('');let fb=$('feedback');if(submitted[q.id]){let ok=selected[q.id]===q.answer;fb.className='feedback '+(ok?'ok':'ng');fb.innerHTML=`<div class="answer-result"><b>${ok?'✅ 正解':'❌ 不正解'}　正解：${q.answer}</b></div><div class="explain">${renderDetailedExplanation(q)}<div class="muted" style="margin-top:14px">${esc(q.explanation_kind||'')}</div></div>`;fb.classList.remove('hidden');$('submit').disabled=true;$('submit').textContent='回答済み'}else{fb.className='feedback hidden';fb.innerHTML='';$('submit').disabled=false;$('submit').textContent='回答する'}}
 function submitQ(){let q=quiz[idx],a=selected[q.id];if(!a)return alert('選択肢を選んでください。');if(submitted[q.id])return;let rec={qid:q.id,level:q.level,year:q.year,term:q.term,category:q.category,selected:a,answer:q.answer,correct:a===q.answer,at:new Date().toISOString()};history.push(rec);localStorage.setItem(HKEY,JSON.stringify(history));submitted[q.id]=true;renderQ();refresh()}
 function prevQ(){if(idx>0){idx--;renderQ();scrollTo(0,0)}}
 function nextQ(){if(idx<quiz.length-1){idx++;renderQ();scrollTo(0,0)}else finish()}
